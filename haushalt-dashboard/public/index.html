@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Haushalts-Dashboard</title>
+<style>
+  :root {
+    --bg: #f4f1ea;
+    --card: #ffffff;
+    --ink: #2b2b2b;
+    --muted: #8a8577;
+    --accent-a: #c96a4e;
+    --accent-b: #4e7a8a;
+    --border: #e6e1d6;
+    --done: #e8f0e6;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    padding-bottom: 40px;
+  }
+  header {
+    padding: 20px 16px 12px;
+    text-align: center;
+  }
+  header h1 {
+    margin: 0 0 4px;
+    font-size: 1.4rem;
+  }
+  header .date {
+    color: var(--muted);
+    font-size: 0.85rem;
+  }
+
+  .tally {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    padding: 8px 16px 16px;
+    max-width: 480px;
+    margin: 0 auto;
+  }
+  .tally-card {
+    flex: 1;
+    background: var(--card);
+    border-radius: 14px;
+    padding: 12px;
+    text-align: center;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    border-top: 4px solid var(--accent-a);
+  }
+  .tally-card.b { border-top-color: var(--accent-b); }
+  .tally-card .name { font-size: 0.8rem; color: var(--muted); }
+  .tally-card .count { font-size: 1.8rem; font-weight: 700; }
+
+  main {
+    max-width: 480px;
+    margin: 0 auto;
+    padding: 0 16px;
+  }
+
+  .section-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    margin: 20px 0 8px;
+    color: var(--ink);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .task {
+    background: var(--card);
+    border-radius: 12px;
+    padding: 12px 14px;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    border: 1px solid var(--border);
+    transition: background 0.15s ease;
+  }
+  .task.done {
+    background: var(--done);
+  }
+  .task .checkbox {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    border: 2px solid var(--muted);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 0.9rem;
+    background: white;
+  }
+  .task.done .checkbox {
+    background: #5f8f5b;
+    border-color: #5f8f5b;
+    color: white;
+  }
+  .task-info { flex: 1; }
+  .task-title { font-size: 0.95rem; }
+  .task-title.strike { text-decoration: line-through; color: var(--muted); }
+  .task-meta {
+    font-size: 0.75rem;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+  .badge {
+    font-size: 0.7rem;
+    padding: 2px 8px;
+    border-radius: 20px;
+    color: white;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .badge.a { background: var(--accent-a); }
+  .badge.b { background: var(--accent-b); }
+
+  .empty-hint {
+    color: var(--muted);
+    font-size: 0.85rem;
+    text-align: center;
+    padding: 16px;
+  }
+
+  .add-task-bar {
+    display: flex;
+    gap: 8px;
+    margin-top: 16px;
+    flex-wrap: wrap;
+  }
+  .add-task-bar input, .add-task-bar select, .add-task-bar button {
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    font-size: 0.85rem;
+  }
+  .add-task-bar input[type=text] { flex: 1; min-width: 140px; }
+  .add-task-bar button {
+    background: var(--ink);
+    color: white;
+    border: none;
+    cursor: pointer;
+  }
+
+  footer {
+    max-width: 480px;
+    margin: 24px auto 0;
+    padding: 0 16px;
+    text-align: center;
+  }
+  footer button {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 0.75rem;
+    cursor: pointer;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🏠 Haushalt</h1>
+  <div class="date" id="dateLabel"></div>
+</header>
+
+<div class="tally" id="tally"></div>
+
+<main>
+  <div class="section-title">📅 Heute</div>
+  <div id="dailyTasks"></div>
+
+  <div class="section-title">🗓️ Diese Woche</div>
+  <div id="weeklyTasks"></div>
+
+  <div class="section-title">➕ Aufgabe hinzufügen</div>
+  <div class="add-task-bar">
+    <input type="text" id="newTitle" placeholder="z.B. Fenster putzen">
+    <select id="newType">
+      <option value="daily">Täglich</option>
+      <option value="weekly">Wöchentlich</option>
+    </select>
+    <select id="newWeekday">
+      <option value="1">Mo</option>
+      <option value="2">Di</option>
+      <option value="3">Mi</option>
+      <option value="4">Do</option>
+      <option value="5">Fr</option>
+      <option value="6">Sa</option>
+      <option value="0">So</option>
+    </select>
+    <button onclick="addTask()">Hinzufügen</button>
+  </div>
+</main>
+
+<footer>
+  <button onclick="resetTally()">Zähler zurücksetzen</button>
+</footer>
+
+<script>
+let CONFIG = { personA: 'Philipp', personB: 'Vanessa' };
+const WEEKDAYS = ['So','Mo','Di','Mi','Do','Fr','Sa'];
+
+async function loadConfig() {
+  const res = await fetch('/api/config');
+  CONFIG = await res.json();
+}
+
+function fmtDate() {
+  const d = new Date();
+  document.getElementById('dateLabel').textContent =
+    d.toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' });
+}
+
+async function loadTally() {
+  const res = await fetch('/api/tally');
+  const rows = await res.json();
+  const a = rows.find(r => r.person === CONFIG.personA) || { count: 0 };
+  const b = rows.find(r => r.person === CONFIG.personB) || { count: 0 };
+  document.getElementById('tally').innerHTML = `
+    <div class="tally-card a">
+      <div class="name">${CONFIG.personA}</div>
+      <div class="count">${a.count}</div>
+    </div>
+    <div class="tally-card b">
+      <div class="name">${CONFIG.personB}</div>
+      <div class="count">${b.count}</div>
+    </div>
+  `;
+}
+
+function personBadge(person) {
+  if (!person) return '';
+  const isA = person === CONFIG.personA;
+  return `<span class="badge ${isA ? 'a' : 'b'}">${person}</span>`;
+}
+
+function renderTask(t) {
+  const metaBits = [];
+  if (t.type === 'weekly' && t.weekday !== null) {
+    metaBits.push(WEEKDAYS[t.weekday]);
+  }
+  if (t.done) {
+    metaBits.push(`erledigt von ${t.doneBy}`);
+  }
+  return `
+    <div class="task ${t.done ? 'done' : ''}">
+      <div class="checkbox" onclick="toggleTask(${t.id})">${t.done ? '✓' : ''}</div>
+      <div class="task-info">
+        <div class="task-title ${t.done ? 'strike' : ''}">${escapeHtml(t.title)}</div>
+        <div class="task-meta">${metaBits.join(' · ')}</div>
+      </div>
+      ${personBadge(t.doneBy)}
+    </div>
+  `;
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+async function loadTasks() {
+  const res = await fetch('/api/tasks');
+  const data = await res.json();
+
+  const daily = data.tasks.filter(t => t.type === 'daily');
+  const weekly = data.tasks.filter(t => t.type === 'weekly');
+
+  document.getElementById('dailyTasks').innerHTML =
+    daily.length ? daily.map(renderTask).join('') : '<div class="empty-hint">Keine täglichen Aufgaben</div>';
+
+  // Woechentliche: heutige zuerst, Rest danach sortiert nach Wochentag
+  weekly.sort((x, y) => {
+    if (x.isTodayFocus && !y.isTodayFocus) return -1;
+    if (!x.isTodayFocus && y.isTodayFocus) return 1;
+    return (x.weekday ?? 8) - (y.weekday ?? 8);
+  });
+
+  document.getElementById('weeklyTasks').innerHTML =
+    weekly.length ? weekly.map(renderTask).join('') : '<div class="empty-hint">Keine wöchentlichen Aufgaben</div>';
+}
+
+async function toggleTask(id) {
+  const person = await pickPerson();
+  if (!person) return;
+  await fetch(`/api/tasks/${id}/toggle`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ person })
+  });
+  await refreshAll();
+}
+
+function pickPerson() {
+  return new Promise(resolve => {
+    const choice = confirm(`Wer war's?\nOK = ${CONFIG.personA}\nAbbrechen = ${CONFIG.personB}`);
+    resolve(choice ? CONFIG.personA : CONFIG.personB);
+  });
+}
+
+async function addTask() {
+  const title = document.getElementById('newTitle').value.trim();
+  const type = document.getElementById('newType').value;
+  const weekday = document.getElementById('newWeekday').value;
+  if (!title) return;
+  await fetch('/api/tasks', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ title, type, weekday: Number(weekday) })
+  });
+  document.getElementById('newTitle').value = '';
+  await refreshAll();
+}
+
+async function resetTally() {
+  if (!confirm('Zähler wirklich zurücksetzen?')) return;
+  await fetch('/api/tally/reset', { method: 'POST' });
+  await refreshAll();
+}
+
+async function refreshAll() {
+  await Promise.all([loadTally(), loadTasks()]);
+}
+
+(async function init() {
+  fmtDate();
+  await loadConfig();
+  await refreshAll();
+  setInterval(refreshAll, 15000); // alle 15s aktualisieren, damit beide Geraete synchron bleiben
+})();
+</script>
+
+</body>
+</html>
