@@ -1,0 +1,1 @@
+{"name":"haushalt-dashboard","version":"1.0.0","description":"Gemeinsames Haushalts-Dashboard fuer taegliche und woechentliche Aufgaben","private":true,"main":"src/server.js","scripts":{"start":"node src/server.js"},"dependencies":{"better-sqlite3":"^11.3.0","express":"^4.19.2"}}
